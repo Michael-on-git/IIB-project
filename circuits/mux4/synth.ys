@@ -1,0 +1,7 @@
+read_verilog mux4.v
+synth -top mux4
+techmap
+opt
+clean
+splitnets -ports
+write_json mux4.json

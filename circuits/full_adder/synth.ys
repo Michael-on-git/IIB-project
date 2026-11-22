@@ -1,0 +1,10 @@
+read_verilog full_adder.v
+synth -top full_adder
+
+splitnets -ports
+
+show -format dot -prefix full_adder_gate_level
+
+write_verilog -noattr full_adder_gate.v
+
+write_json full_adder_gate.json

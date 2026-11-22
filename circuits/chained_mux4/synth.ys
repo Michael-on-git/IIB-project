@@ -1,0 +1,7 @@
+read_verilog chainedmux4.v
+synth -top chained_mux
+techmap
+opt
+clean
+splitnets -ports
+write_json chainedmux4.json

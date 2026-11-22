@@ -1,0 +1,30 @@
+[tasks]
+prove_equiv
+
+[options]
+mode prove
+depth 1
+
+[engines]
+smtbmc z3
+
+[files]
+full_adder.v
+full_adder_gate.v
+
+[script]
+read_verilog full_adder.v
+hierarchy -check -top full_adder
+prep -top full_adder
+design -stash gold
+
+read_verilog full_adder_gate.v
+hierarchy -check -top full_adder
+prep -top full_adder
+design -stash gate
+
+design -copy-from gold -as gold full_adder
+design -copy-from gate -as gate full_adder
+
+miter -equiv -flatten -make_assert gold gate miter
+hierarchy -top miter

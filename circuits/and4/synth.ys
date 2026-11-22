@@ -1,0 +1,7 @@
+read_verilog and4.v
+synth -top and4
+techmap
+opt
+clean
+splitnets -ports
+write_json and4.json

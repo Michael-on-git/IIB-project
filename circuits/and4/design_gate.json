@@ -1,0 +1,239 @@
+{
+  "creator": "Yosys 0.70+190 (git sha1 485b63564, Release, GNU /usr/bin/x86_64-w64-mingw32-g++ 15.2.1)",
+  "modules": {
+    "and4": {
+      "attributes": {
+        "top": "00000000000000000000000000000001",
+        "src": "and4.v:1.1-3.10"
+      },
+      "ports": {
+        "a[0]": {
+          "direction": "input",
+          "bits": [ 2 ]
+        },
+        "a[1]": {
+          "direction": "input",
+          "offset": 1,
+          "bits": [ 3 ]
+        },
+        "a[2]": {
+          "direction": "input",
+          "offset": 2,
+          "bits": [ 4 ]
+        },
+        "a[3]": {
+          "direction": "input",
+          "offset": 3,
+          "bits": [ 5 ]
+        },
+        "b[0]": {
+          "direction": "input",
+          "bits": [ 6 ]
+        },
+        "b[1]": {
+          "direction": "input",
+          "offset": 1,
+          "bits": [ 7 ]
+        },
+        "b[2]": {
+          "direction": "input",
+          "offset": 2,
+          "bits": [ 8 ]
+        },
+        "b[3]": {
+          "direction": "input",
+          "offset": 3,
+          "bits": [ 9 ]
+        },
+        "y[0]": {
+          "direction": "output",
+          "bits": [ 10 ]
+        },
+        "y[1]": {
+          "direction": "output",
+          "offset": 1,
+          "bits": [ 11 ]
+        },
+        "y[2]": {
+          "direction": "output",
+          "offset": 2,
+          "bits": [ 12 ]
+        },
+        "y[3]": {
+          "direction": "output",
+          "offset": 3,
+          "bits": [ 13 ]
+        }
+      },
+      "cells": {
+        "$abc$77$blif$77$0": {
+          "hide_name": 1,
+          "type": "$_AND_",
+          "parameters": {
+          },
+          "attributes": {
+          },
+          "port_directions": {
+            "A": "input",
+            "B": "input",
+            "Y": "output"
+          },
+          "connections": {
+            "A": [ 5 ],
+            "B": [ 9 ],
+            "Y": [ 13 ]
+          }
+        },
+        "$abc$77$blif$77$1": {
+          "hide_name": 1,
+          "type": "$_AND_",
+          "parameters": {
+          },
+          "attributes": {
+          },
+          "port_directions": {
+            "A": "input",
+            "B": "input",
+            "Y": "output"
+          },
+          "connections": {
+            "A": [ 2 ],
+            "B": [ 6 ],
+            "Y": [ 10 ]
+          }
+        },
+        "$abc$77$blif$77$2": {
+          "hide_name": 1,
+          "type": "$_AND_",
+          "parameters": {
+          },
+          "attributes": {
+          },
+          "port_directions": {
+            "A": "input",
+            "B": "input",
+            "Y": "output"
+          },
+          "connections": {
+            "A": [ 3 ],
+            "B": [ 7 ],
+            "Y": [ 11 ]
+          }
+        },
+        "$abc$77$blif$77$3": {
+          "hide_name": 1,
+          "type": "$_AND_",
+          "parameters": {
+          },
+          "attributes": {
+          },
+          "port_directions": {
+            "A": "input",
+            "B": "input",
+            "Y": "output"
+          },
+          "connections": {
+            "A": [ 4 ],
+            "B": [ 8 ],
+            "Y": [ 12 ]
+          }
+        }
+      },
+      "netnames": {
+        "a[0]": {
+          "hide_name": 0,
+          "bits": [ 2 ],
+          "attributes": {
+            "src": "and4.v:1.25-1.26"
+          }
+        },
+        "a[1]": {
+          "hide_name": 0,
+          "bits": [ 3 ],
+          "offset": 1,
+          "attributes": {
+            "src": "and4.v:1.25-1.26"
+          }
+        },
+        "a[2]": {
+          "hide_name": 0,
+          "bits": [ 4 ],
+          "offset": 2,
+          "attributes": {
+            "src": "and4.v:1.25-1.26"
+          }
+        },
+        "a[3]": {
+          "hide_name": 0,
+          "bits": [ 5 ],
+          "offset": 3,
+          "attributes": {
+            "src": "and4.v:1.25-1.26"
+          }
+        },
+        "b[0]": {
+          "hide_name": 0,
+          "bits": [ 6 ],
+          "attributes": {
+            "src": "and4.v:1.40-1.41"
+          }
+        },
+        "b[1]": {
+          "hide_name": 0,
+          "bits": [ 7 ],
+          "offset": 1,
+          "attributes": {
+            "src": "and4.v:1.40-1.41"
+          }
+        },
+        "b[2]": {
+          "hide_name": 0,
+          "bits": [ 8 ],
+          "offset": 2,
+          "attributes": {
+            "src": "and4.v:1.40-1.41"
+          }
+        },
+        "b[3]": {
+          "hide_name": 0,
+          "bits": [ 9 ],
+          "offset": 3,
+          "attributes": {
+            "src": "and4.v:1.40-1.41"
+          }
+        },
+        "y[0]": {
+          "hide_name": 0,
+          "bits": [ 10 ],
+          "attributes": {
+            "src": "and4.v:1.56-1.57"
+          }
+        },
+        "y[1]": {
+          "hide_name": 0,
+          "bits": [ 11 ],
+          "offset": 1,
+          "attributes": {
+            "src": "and4.v:1.56-1.57"
+          }
+        },
+        "y[2]": {
+          "hide_name": 0,
+          "bits": [ 12 ],
+          "offset": 2,
+          "attributes": {
+            "src": "and4.v:1.56-1.57"
+          }
+        },
+        "y[3]": {
+          "hide_name": 0,
+          "bits": [ 13 ],
+          "offset": 3,
+          "attributes": {
+            "src": "and4.v:1.56-1.57"
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,33 @@
+# Python — regenerable
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.venv/
+venv/
+.ruff_cache/
+
+# Editor
+.vscode/
+
+# Generated pipeline output
+out.json
+*-wl.json
+*-unroll.json
+*.log
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Visualization artifacts
+*.svg
+
+# SymbiYosys working directories
+equiv_*/
+
+# Yosys visualization output
+*.dot
+
+# Waveforms
+*.vcd

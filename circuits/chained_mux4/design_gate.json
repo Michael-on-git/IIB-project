@@ -1,0 +1,423 @@
+{
+  "creator": "Yosys 0.70+190 (git sha1 485b63564, Release, GNU /usr/bin/x86_64-w64-mingw32-g++ 15.2.1)",
+  "modules": {
+    "chained_mux": {
+      "attributes": {
+        "top": "00000000000000000000000000000001",
+        "src": "chainedmux4.v:1.1-9.10"
+      },
+      "ports": {
+        "a[0]": {
+          "direction": "input",
+          "bits": [ 2 ]
+        },
+        "a[1]": {
+          "direction": "input",
+          "offset": 1,
+          "bits": [ 3 ]
+        },
+        "a[2]": {
+          "direction": "input",
+          "offset": 2,
+          "bits": [ 4 ]
+        },
+        "a[3]": {
+          "direction": "input",
+          "offset": 3,
+          "bits": [ 5 ]
+        },
+        "b[0]": {
+          "direction": "input",
+          "bits": [ 6 ]
+        },
+        "b[1]": {
+          "direction": "input",
+          "offset": 1,
+          "bits": [ 7 ]
+        },
+        "b[2]": {
+          "direction": "input",
+          "offset": 2,
+          "bits": [ 8 ]
+        },
+        "b[3]": {
+          "direction": "input",
+          "offset": 3,
+          "bits": [ 9 ]
+        },
+        "c[0]": {
+          "direction": "input",
+          "bits": [ 10 ]
+        },
+        "c[1]": {
+          "direction": "input",
+          "offset": 1,
+          "bits": [ 11 ]
+        },
+        "c[2]": {
+          "direction": "input",
+          "offset": 2,
+          "bits": [ 12 ]
+        },
+        "c[3]": {
+          "direction": "input",
+          "offset": 3,
+          "bits": [ 13 ]
+        },
+        "sel1": {
+          "direction": "input",
+          "bits": [ 14 ]
+        },
+        "sel2": {
+          "direction": "input",
+          "bits": [ 15 ]
+        },
+        "y[0]": {
+          "direction": "output",
+          "bits": [ 16 ]
+        },
+        "y[1]": {
+          "direction": "output",
+          "offset": 1,
+          "bits": [ 17 ]
+        },
+        "y[2]": {
+          "direction": "output",
+          "offset": 2,
+          "bits": [ 18 ]
+        },
+        "y[3]": {
+          "direction": "output",
+          "offset": 3,
+          "bits": [ 19 ]
+        }
+      },
+      "cells": {
+        "$abc$82$blif$82$0": {
+          "hide_name": 1,
+          "type": "$_MUX_",
+          "parameters": {
+          },
+          "attributes": {
+          },
+          "port_directions": {
+            "A": "input",
+            "B": "input",
+            "S": "input",
+            "Y": "output"
+          },
+          "connections": {
+            "A": [ 5 ],
+            "B": [ 9 ],
+            "S": [ 14 ],
+            "Y": [ 20 ]
+          }
+        },
+        "$abc$82$blif$82$1": {
+          "hide_name": 1,
+          "type": "$_MUX_",
+          "parameters": {
+          },
+          "attributes": {
+          },
+          "port_directions": {
+            "A": "input",
+            "B": "input",
+            "S": "input",
+            "Y": "output"
+          },
+          "connections": {
+            "A": [ 20 ],
+            "B": [ 13 ],
+            "S": [ 15 ],
+            "Y": [ 19 ]
+          }
+        },
+        "$abc$82$blif$82$2": {
+          "hide_name": 1,
+          "type": "$_MUX_",
+          "parameters": {
+          },
+          "attributes": {
+          },
+          "port_directions": {
+            "A": "input",
+            "B": "input",
+            "S": "input",
+            "Y": "output"
+          },
+          "connections": {
+            "A": [ 2 ],
+            "B": [ 6 ],
+            "S": [ 14 ],
+            "Y": [ 21 ]
+          }
+        },
+        "$abc$82$blif$82$3": {
+          "hide_name": 1,
+          "type": "$_MUX_",
+          "parameters": {
+          },
+          "attributes": {
+          },
+          "port_directions": {
+            "A": "input",
+            "B": "input",
+            "S": "input",
+            "Y": "output"
+          },
+          "connections": {
+            "A": [ 21 ],
+            "B": [ 10 ],
+            "S": [ 15 ],
+            "Y": [ 16 ]
+          }
+        },
+        "$abc$82$blif$82$4": {
+          "hide_name": 1,
+          "type": "$_MUX_",
+          "parameters": {
+          },
+          "attributes": {
+          },
+          "port_directions": {
+            "A": "input",
+            "B": "input",
+            "S": "input",
+            "Y": "output"
+          },
+          "connections": {
+            "A": [ 3 ],
+            "B": [ 7 ],
+            "S": [ 14 ],
+            "Y": [ 22 ]
+          }
+        },
+        "$abc$82$blif$82$5": {
+          "hide_name": 1,
+          "type": "$_MUX_",
+          "parameters": {
+          },
+          "attributes": {
+          },
+          "port_directions": {
+            "A": "input",
+            "B": "input",
+            "S": "input",
+            "Y": "output"
+          },
+          "connections": {
+            "A": [ 22 ],
+            "B": [ 11 ],
+            "S": [ 15 ],
+            "Y": [ 17 ]
+          }
+        },
+        "$abc$82$blif$82$6": {
+          "hide_name": 1,
+          "type": "$_MUX_",
+          "parameters": {
+          },
+          "attributes": {
+          },
+          "port_directions": {
+            "A": "input",
+            "B": "input",
+            "S": "input",
+            "Y": "output"
+          },
+          "connections": {
+            "A": [ 4 ],
+            "B": [ 8 ],
+            "S": [ 14 ],
+            "Y": [ 23 ]
+          }
+        },
+        "$abc$82$blif$82$7": {
+          "hide_name": 1,
+          "type": "$_MUX_",
+          "parameters": {
+          },
+          "attributes": {
+          },
+          "port_directions": {
+            "A": "input",
+            "B": "input",
+            "S": "input",
+            "Y": "output"
+          },
+          "connections": {
+            "A": [ 23 ],
+            "B": [ 12 ],
+            "S": [ 15 ],
+            "Y": [ 18 ]
+          }
+        }
+      },
+      "netnames": {
+        "$abc$82$new_n19": {
+          "hide_name": 1,
+          "bits": [ 20 ],
+          "attributes": {
+          }
+        },
+        "$abc$82$new_n21": {
+          "hide_name": 1,
+          "bits": [ 21 ],
+          "attributes": {
+          }
+        },
+        "$abc$82$new_n23": {
+          "hide_name": 1,
+          "bits": [ 22 ],
+          "attributes": {
+          }
+        },
+        "$abc$82$new_n25": {
+          "hide_name": 1,
+          "bits": [ 23 ],
+          "attributes": {
+          }
+        },
+        "a[0]": {
+          "hide_name": 0,
+          "bits": [ 2 ],
+          "attributes": {
+            "src": "chainedmux4.v:2.17-2.18"
+          }
+        },
+        "a[1]": {
+          "hide_name": 0,
+          "bits": [ 3 ],
+          "offset": 1,
+          "attributes": {
+            "src": "chainedmux4.v:2.17-2.18"
+          }
+        },
+        "a[2]": {
+          "hide_name": 0,
+          "bits": [ 4 ],
+          "offset": 2,
+          "attributes": {
+            "src": "chainedmux4.v:2.17-2.18"
+          }
+        },
+        "a[3]": {
+          "hide_name": 0,
+          "bits": [ 5 ],
+          "offset": 3,
+          "attributes": {
+            "src": "chainedmux4.v:2.17-2.18"
+          }
+        },
+        "b[0]": {
+          "hide_name": 0,
+          "bits": [ 6 ],
+          "attributes": {
+            "src": "chainedmux4.v:2.20-2.21"
+          }
+        },
+        "b[1]": {
+          "hide_name": 0,
+          "bits": [ 7 ],
+          "offset": 1,
+          "attributes": {
+            "src": "chainedmux4.v:2.20-2.21"
+          }
+        },
+        "b[2]": {
+          "hide_name": 0,
+          "bits": [ 8 ],
+          "offset": 2,
+          "attributes": {
+            "src": "chainedmux4.v:2.20-2.21"
+          }
+        },
+        "b[3]": {
+          "hide_name": 0,
+          "bits": [ 9 ],
+          "offset": 3,
+          "attributes": {
+            "src": "chainedmux4.v:2.20-2.21"
+          }
+        },
+        "c[0]": {
+          "hide_name": 0,
+          "bits": [ 10 ],
+          "attributes": {
+            "src": "chainedmux4.v:2.23-2.24"
+          }
+        },
+        "c[1]": {
+          "hide_name": 0,
+          "bits": [ 11 ],
+          "offset": 1,
+          "attributes": {
+            "src": "chainedmux4.v:2.23-2.24"
+          }
+        },
+        "c[2]": {
+          "hide_name": 0,
+          "bits": [ 12 ],
+          "offset": 2,
+          "attributes": {
+            "src": "chainedmux4.v:2.23-2.24"
+          }
+        },
+        "c[3]": {
+          "hide_name": 0,
+          "bits": [ 13 ],
+          "offset": 3,
+          "attributes": {
+            "src": "chainedmux4.v:2.23-2.24"
+          }
+        },
+        "sel1": {
+          "hide_name": 0,
+          "bits": [ 14 ],
+          "attributes": {
+            "src": "chainedmux4.v:3.17-3.21"
+          }
+        },
+        "sel2": {
+          "hide_name": 0,
+          "bits": [ 15 ],
+          "attributes": {
+            "src": "chainedmux4.v:3.23-3.27"
+          }
+        },
+        "y[0]": {
+          "hide_name": 0,
+          "bits": [ 16 ],
+          "attributes": {
+            "src": "chainedmux4.v:4.18-4.19"
+          }
+        },
+        "y[1]": {
+          "hide_name": 0,
+          "bits": [ 17 ],
+          "offset": 1,
+          "attributes": {
+            "src": "chainedmux4.v:4.18-4.19"
+          }
+        },
+        "y[2]": {
+          "hide_name": 0,
+          "bits": [ 18 ],
+          "offset": 2,
+          "attributes": {
+            "src": "chainedmux4.v:4.18-4.19"
+          }
+        },
+        "y[3]": {
+          "hide_name": 0,
+          "bits": [ 19 ],
+          "offset": 3,
+          "attributes": {
+            "src": "chainedmux4.v:4.18-4.19"
+          }
+        }
+      }
+    }
+  }
+}
