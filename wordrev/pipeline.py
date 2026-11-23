@@ -1,4 +1,3 @@
-# wordrev/pipeline.py
 """
 End-to-end pipeline: Yosys JSON → recovered word-level description.
 
@@ -19,13 +18,14 @@ The CLI in wordrev/__main__.py is the primary consumer. Programmatic
 callers should use `run_pipeline` directly. Human-readable formatting is
 provided by `format_human`; machine-readable formatting by `format_json`.
 """
+
 from __future__ import annotations
 
-import json
-import time
 from dataclasses import dataclass, field
+import json
 from pathlib import Path
-from typing import Any
+import time
+from typing import Any, Literal
 
 import networkx as nx
 
@@ -34,8 +34,10 @@ from .graph import Node, build_graph, node_label
 from .identify import Match, identify_words
 from .parser import parse_yosys_json
 from .shape import compute_all_shape_hashes
-from .slice import compute_functional_signatures
 from .shape_unroll import compute_all_shape_hashes_unrolled
+from .slice import compute_functional_signatures
+
+ShapeMethod = Literal["wl", "unroll"]
 
 SHAPE_METHODS = {
     "wl": compute_all_shape_hashes,
@@ -46,9 +48,11 @@ SHAPE_METHODS = {
 # Result dataclasses
 # -----------------------------------------------------------------------------
 
+
 @dataclass
 class WordRecovery:
     """A recovered Word plus whatever identification matched it."""
+
     word: Word
     matches: list[Match] = field(default_factory=list)
 
@@ -79,6 +83,7 @@ class WordRecovery:
 @dataclass
 class RecoveryResult:
     """Everything the pipeline recovered from one netlist."""
+
     module_name: str
     words: list[WordRecovery]
     graph: nx.MultiDiGraph
@@ -93,15 +98,13 @@ class RecoveryResult:
         return sum(1 for w in self.words if w.identified)
 
     def summary(self) -> str:
-        return (
-            f"{self.num_words} words recovered, "
-            f"{self.num_identified} identified"
-        )
+        return f"{self.num_words} words recovered, {self.num_identified} identified"
 
 
 # -----------------------------------------------------------------------------
 # Pipeline
 # -----------------------------------------------------------------------------
+
 
 def run_pipeline(
     netlist_path: str | Path,
@@ -110,7 +113,7 @@ def run_pipeline(
     shape_k: int = 3,
     min_width: int = 2,
     propagate: bool = True,
-    shape_method: str = "wl",
+    shape_method: ShapeMethod = "wl",
     identify: bool = True,
     max_external_inputs: int = 12,
     max_fragment_gates: int = 500,
@@ -125,6 +128,12 @@ def run_pipeline(
     path = Path(netlist_path)
     if not path.exists():
         raise FileNotFoundError(f"netlist not found: {path}")
+
+    if shape_method not in SHAPE_METHODS:
+        raise ValueError(
+            f"unknown shape_method {shape_method!r}; "
+            f"expected one of {sorted(SHAPE_METHODS)}"
+        )
 
     t0 = time.perf_counter()
     netlist = parse_yosys_json(path)
@@ -180,8 +189,7 @@ def run_pipeline(
     t_identify = time.perf_counter() - t0
 
     recoveries = [
-        WordRecovery(word=w, matches=matches_by_index[i])
-        for i, w in enumerate(words)
+        WordRecovery(word=w, matches=matches_by_index[i]) for i, w in enumerate(words)
     ]
 
     return RecoveryResult(
@@ -208,6 +216,7 @@ def run_pipeline(
 # Human-readable formatting
 # -----------------------------------------------------------------------------
 
+
 def _format_word(wr: WordRecovery, result: RecoveryResult, index: int) -> str:
     """One Word as a multi-line block for human output.
 
@@ -231,14 +240,14 @@ def _format_word(wr: WordRecovery, result: RecoveryResult, index: int) -> str:
         f"width={width}  source={wr.word.source}  conf={wr.word.confidence:.2f}",
     ]
     if wr.matches:
+        port_labels_by_component = wr.port_labels(result.graph)
         for match in wr.matches:
-            port_labels = wr.port_labels(result.graph)[match.component.name]
-            lines.append(
-                f"      = {match.component.name}  ({' '.join(port_labels)})"
-            )
+            port_labels = port_labels_by_component[match.component.name]
+            lines.append(f"      = {match.component.name}  ({' '.join(port_labels)})")
     else:
         lines.append("      (no library match)")
     return "\n".join(lines)
+
 
 def format_human(result: RecoveryResult, *, include_stats: bool = False) -> str:
     """Human-readable report."""
@@ -254,8 +263,7 @@ def format_human(result: RecoveryResult, *, include_stats: bool = False) -> str:
         body.append("No words recovered.")
     else:
         body.append(
-            f"Words recovered: {len(result.words)} "
-            f"({result.num_identified} identified)"
+            f"Words recovered: {len(result.words)} ({result.num_identified} identified)"
         )
         body.append("")
         for i, wr in enumerate(result.words):
@@ -264,8 +272,14 @@ def format_human(result: RecoveryResult, *, include_stats: bool = False) -> str:
 
     if include_stats:
         body.append("Timing:")
-        for key in ("parse_seconds", "graph_seconds", "analysis_seconds",
-                    "aggregate_seconds", "identify_seconds", "total_seconds"):
+        for key in (
+            "parse_seconds",
+            "graph_seconds",
+            "analysis_seconds",
+            "aggregate_seconds",
+            "identify_seconds",
+            "total_seconds",
+        ):
             body.append(f"  {key:<22} {stats[key]:.3f}s")
 
     return "\n".join(body)
@@ -275,12 +289,14 @@ def format_human(result: RecoveryResult, *, include_stats: bool = False) -> str:
 # Machine-readable formatting
 # -----------------------------------------------------------------------------
 
+
 def format_json(result: RecoveryResult) -> str:
     """Machine-readable JSON output.
 
     Bit ordering is LSB-first, matching the Word and bit_labels ordering.
     Stats floats are rounded to 4 decimals for stable diffs.
     """
+
     def node_id(node: Node) -> object:
         return node[1]
 
@@ -302,10 +318,12 @@ def format_json(result: RecoveryResult) -> str:
                     "nets": [node_id(n) for n in nets],
                     "labels": [node_label(result.graph, n) for n in nets],
                 }
-            word_out["matches"].append({
-                "component": match.component.name,
-                "alignment": alignment_out,
-            })
+            word_out["matches"].append(
+                {
+                    "component": match.component.name,
+                    "alignment": alignment_out,
+                }
+            )
         words_out.append(word_out)
 
     return json.dumps(
