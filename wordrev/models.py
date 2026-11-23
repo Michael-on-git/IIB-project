@@ -1,8 +1,16 @@
+from __future__ import annotations
+
 from dataclasses import dataclass, field
 from enum import IntEnum
-from typing import Optional, Union
+from typing import Any, Literal, TypedDict
 
-BitID = Union[int, str]
+BitID = int | str
+Direction = Literal["input", "output", "inout"]
+
+
+class PortInfo(TypedDict):
+    direction: Direction
+    bits: list[BitID]
 
 
 class NameSource(IntEnum):
@@ -16,14 +24,14 @@ class NameSource(IntEnum):
 @dataclass
 class Net:
     id: BitID
-    name: Optional[str] = None
+    name: str | None = None
     name_source: NameSource = NameSource.NONE
-    base_name: Optional[str] = None
-    vector_index: Optional[int] = None
+    base_name: str | None = None
+    vector_index: int | None = None
     is_constant: bool = False
-    constant_value: Optional[Union[int, str]] = None
+    constant_value: int | str | None = None
     is_port: bool = False
-    port_direction: Optional[str] = None
+    port_direction: Direction | None = None
 
 
 @dataclass
@@ -33,8 +41,8 @@ class Gate:
     inputs: dict[str, list[BitID]] = field(default_factory=dict)
     outputs: dict[str, list[BitID]] = field(default_factory=dict)
     inouts: dict[str, list[BitID]] = field(default_factory=dict)
-    attributes: dict = field(default_factory=dict)
-    parameters: dict = field(default_factory=dict)
+    attributes: dict[str, Any] = field(default_factory=dict)
+    parameters: dict[str, Any] = field(default_factory=dict)
 
     def __repr__(self) -> str:
         return f"Gate({self.name}, {self.cell_type})"
@@ -43,7 +51,7 @@ class Gate:
 @dataclass
 class Module:
     name: str
-    ports: dict = field(default_factory=dict)
+    ports: dict[str, PortInfo] = field(default_factory=dict)
     gates: dict[str, Gate] = field(default_factory=dict)
     nets: dict[BitID, Net] = field(default_factory=dict)
 

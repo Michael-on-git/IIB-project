@@ -18,13 +18,11 @@ import json
 import logging
 from pathlib import Path
 import re
-from typing import Any, Literal
+from typing import Any
 
-from .models import BitID, Gate, Module, NameSource, Net, Netlist
+from .models import BitID, Direction, Gate, Module, NameSource, Net, Netlist
 
 log = logging.getLogger(__name__)
-
-Direction = Literal["input", "output", "inout"]
 
 CONSTANT_MAP: dict[BitID, int | str] = {
     0: 0,
