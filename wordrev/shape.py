@@ -1,4 +1,3 @@
-# wordrev/shape.py
 """
 Shape hashing: k-bounded backward structural fingerprints for nets.
 
@@ -10,13 +9,16 @@ each net's label captures its k-bounded backward cone up to isomorphism
 Leaf nodes (primary inputs, constants, and any net with no driver) keep
 their initial label forever. They are the structural "atoms" of a cone.
 """
+
 from __future__ import annotations
 
+from collections.abc import Collection
 import hashlib
+from typing import Literal
 
 import networkx as nx
 
-from .graph import Node
+from .graph import Node, in_edges, is_gate, is_net
 
 # Initial label for non-constant nets.
 NET_LABEL = "net"
@@ -24,10 +26,13 @@ NET_LABEL = "net"
 # Prefix for constant net labels; the constant value is appended.
 CONST_PREFIX = "const_"
 
+PinMode = Literal["toggle", "always"]
+
 
 # -----------------------------------------------------------------------------
 # Public API
 # -----------------------------------------------------------------------------
+
 
 def compute_all_shape_hashes(
     G: nx.MultiDiGraph,
@@ -64,13 +69,15 @@ def compute_all_shape_hashes(
     if k < 0:
         raise ValueError(f"k must be non-negative, got {k}")
 
-    # --- Initial labels ---
+    # --- Partition nodes & assign initial labels ---
+    gate_nodes: list[Node] = []
+    net_nodes: list[Node] = []
     labels: dict[Node, str] = {}
     is_leaf: dict[Node, bool] = {}
 
     for node in G.nodes:
-        kind = node[0]
-        if kind == "net":
+        if is_net(node):
+            net_nodes.append(node)
             data = G.nodes[node]
             if data.get("is_constant"):
                 labels[node] = f"{CONST_PREFIX}{data.get('constant_value')}"
@@ -78,58 +85,38 @@ def compute_all_shape_hashes(
                 labels[node] = NET_LABEL
             is_leaf[node] = not _has_gate_driver(G, node)
         else:  # gate
+            gate_nodes.append(node)
             labels[node] = str(G.nodes[node]["cell_type"])
-            is_leaf[node] = False
 
     # --- k rounds of bipartite WL refinement ---
     for _ in range(k):
         # 1. Update Gate labels using upstream input Nets
-        new_gate_labels: dict[Node, str] = {}
-        for node in G.nodes:
-            if node[0] != "gate":
-                continue
-            
-            neighbor_pairs: list[tuple[str, str]] = []
-            for pred in G.predecessors(node):
-                if pred[0] != "net":
-                    continue
-                for edge_attrs in G[pred][node].values():
-                    if edge_attrs.get("role") in ("input", "inout"):
-                        pin = edge_attrs.get("pin", "") if include_pins else ""
-                        neighbor_pairs.append((pin, labels[pred]))
-            
-            neighbor_pairs.sort()
-            new_gate_labels[node] = _hash_label(labels[node], neighbor_pairs)
-
-        # Apply gate label updates
-        labels.update(new_gate_labels)
+        labels.update(
+            _refine(
+                G,
+                gate_nodes,
+                labels,
+                {"input", "inout"},
+                pin_mode="toggle",
+                include_pins=include_pins,
+            )
+        )
 
         # 2. Update Net labels using driving Gates
-        new_net_labels: dict[Node, str] = {}
-        for node in G.nodes:
-            if node[0] != "net":
-                continue
-            if is_leaf[node]:
-                new_net_labels[node] = labels[node]
-                continue
-
-            neighbor_pairs = []
-            for pred in G.predecessors(node):
-                if pred[0] != "gate":
-                    continue
-                for edge_attrs in G[pred][node].values():
-                    if edge_attrs.get("role") in ("output", "inout"):
-                        pin = edge_attrs.get("pin", "")
-                        neighbor_pairs.append((pin, labels[pred]))
-
-            neighbor_pairs.sort()
-            new_net_labels[node] = _hash_label(labels[node], neighbor_pairs)
-
-        # Apply net label updates
-        labels.update(new_net_labels)
+        labels.update(
+            _refine(
+                G,
+                net_nodes,
+                labels,
+                {"output", "inout"},
+                is_leaf=is_leaf,
+                pin_mode="always",
+                include_pins=include_pins,
+            )
+        )
 
     # Return shape hashes for net nodes only
-    return {node: labels[node] for node in G.nodes if node[0] == "net"}
+    return {node: labels[node] for node in net_nodes}
 
 
 def shape_hash(
@@ -145,7 +132,7 @@ def shape_hash(
     when you need more than one net: the batch version is O(k * |E|)
     for any number of nets, while this wrapper is O(k * |E|) per call.
     """
-    if net[0] != "net":
+    if not is_net(net):
         raise ValueError(f"shape_hash requires a net node, got {net!r}")
     return compute_all_shape_hashes(G, k, include_pins=include_pins)[net]
 
@@ -172,7 +159,7 @@ def backward_cone(
 
         for pred in G.predecessors(node):
             # Increment depth only when transitioning net -> gate
-            next_depth = depth + 1 if node[0] == "net" and pred[0] == "gate" else depth
+            next_depth = depth + 1 if is_net(node) and is_gate(pred) else depth
             if next_depth <= k:
                 frontier.append((pred, next_depth))
 
@@ -183,14 +170,42 @@ def backward_cone(
 # Internal helpers
 # -----------------------------------------------------------------------------
 
+
+def _refine(
+    G: nx.MultiDiGraph,
+    nodes: list[Node],
+    labels: dict[Node, str],
+    roles: Collection[str],
+    *,
+    is_leaf: dict[Node, bool] | None = None,
+    pin_mode: PinMode,
+    include_pins: bool = True,
+) -> dict[Node, str]:
+    """Compute one synchronous WL refinement step for `nodes`."""
+    use_pin = pin_mode == "always" or include_pins
+    new_labels: dict[Node, str] = {}
+
+    for node in nodes:
+        if is_leaf is not None and is_leaf.get(node, False):
+            new_labels[node] = labels[node]
+            continue
+
+        neighbor_pairs: list[tuple[str, str]] = []
+        for pred, edge_attrs in in_edges(G, node, roles):
+            if is_net(pred) == is_net(node):
+                continue
+            pin = edge_attrs.get("pin", "") if use_pin else ""
+            neighbor_pairs.append((pin, labels[pred]))
+
+        neighbor_pairs.sort()
+        new_labels[node] = _hash_label(labels[node], neighbor_pairs)
+
+    return new_labels
+
+
 def _has_gate_driver(G: nx.MultiDiGraph, net: Node) -> bool:
     """True if some gate output or inout drives this net."""
-    for pred in G.predecessors(net):
-        if pred[0] == "gate":
-            for attrs in G[pred][net].values():
-                if attrs.get("role") in ("output", "inout"):
-                    return True
-    return False
+    return any(is_gate(pred) for pred, _ in in_edges(G, net, {"output", "inout"}))
 
 
 def _hash_label(base: str, neighbors: list[tuple[str, str]]) -> str:

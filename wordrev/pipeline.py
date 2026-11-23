@@ -113,7 +113,7 @@ def run_pipeline(
     shape_k: int = 3,
     min_width: int = 2,
     propagate: bool = True,
-    shape_method: ShapeMethod = "wl",
+    shape_method: str = "wl",
     identify: bool = True,
     max_external_inputs: int = 12,
     max_fragment_gates: int = 500,

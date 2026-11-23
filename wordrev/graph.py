@@ -126,6 +126,21 @@ def build_graph(module: Module) -> nx.MultiDiGraph:
 
     # 2. Gates and their edges. Missing nets encountered here are
     #    synthesized via _ensure_net_node without touching the model.
+    def _connect(
+    g_node: Node,
+    pin_map: dict[str, list[BitID]],
+    role: str,
+    direction: EdgeDirection,
+    ) -> None:
+        for pin, bits in pin_map.items():
+            for bit_id in bits:
+                _ensure_net_node(bit_id)
+                n_node = net_node(bit_id)
+                if direction in ("net_to_gate", "both"):
+                    G.add_edge(n_node, g_node, pin=pin, role=role)
+                if direction in ("gate_to_net", "both"):
+                    G.add_edge(g_node, n_node, pin=pin, role=role)
+    
     for gate_name, gate in module.gates.items():
         g_node = gate_node(gate_name)
         G.add_node(
@@ -135,24 +150,9 @@ def build_graph(module: Module) -> nx.MultiDiGraph:
             attributes=gate.attributes,
             parameters=gate.parameters,
         )
-
-        def _connect(
-            pin_map: dict[str, list[BitID]],
-            role: str,
-            direction: EdgeDirection,
-        ) -> None:
-            for pin, bits in pin_map.items():
-                for bit_id in bits:
-                    _ensure_net_node(bit_id)
-                    n_node = net_node(bit_id)
-                    if direction in ("net_to_gate", "both"):
-                        G.add_edge(n_node, g_node, pin=pin, role=role)
-                    if direction in ("gate_to_net", "both"):
-                        G.add_edge(g_node, n_node, pin=pin, role=role)
-
-        _connect(gate.inputs, "input", "net_to_gate")
-        _connect(gate.outputs, "output", "gate_to_net")
-        _connect(gate.inouts, "inout", "both")
+        _connect(g_node, gate.inputs, "input", "net_to_gate")
+        _connect(g_node, gate.outputs, "output", "gate_to_net")
+        _connect(g_node, gate.inouts, "inout", "both")
 
     return G
 
