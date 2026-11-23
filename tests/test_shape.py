@@ -318,3 +318,20 @@ def test_pin_toggle_on_commutative_gate():
     assert shape_hash(Ga, net_node(10), k=1, include_pins=False) == \
            shape_hash(Gb, net_node(10), k=1, include_pins=False), \
         "pin-blind hashing should treat swapped commutative inputs as equal"
+
+def test_net_side_always_includes_output_pin() -> None:
+    module = Module(name="dff_multi_output")
+    for bit_id in (1, 2, 3, 4, 5):
+        module.get_net(bit_id)
+    module.gates["ff0"] = Gate(
+        name="ff0",
+        cell_type="$_DFF_PN0_",
+        inputs={"C": [1], "D": [2], "R": [3]},
+        outputs={"Q": [4], "QN": [5]},
+    )
+
+    G = build_graph(module)
+    q_hash = shape_hash(G, net_node(4), include_pins=False)
+    qn_hash = shape_hash(G, net_node(5), include_pins=False)
+
+    assert q_hash != qn_hash

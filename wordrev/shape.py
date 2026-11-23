@@ -119,7 +119,7 @@ def compute_all_shape_hashes(
                     continue
                 for edge_attrs in G[pred][node].values():
                     if edge_attrs.get("role") in ("output", "inout"):
-                        pin = edge_attrs.get("pin", "") if include_pins else ""
+                        pin = edge_attrs.get("pin", "")
                         neighbor_pairs.append((pin, labels[pred]))
 
             neighbor_pairs.sort()
