@@ -127,7 +127,7 @@ def run_pipeline(
         raise FileNotFoundError(f"netlist not found: {path}")
 
     t0 = time.perf_counter()
-    netlist = parse_yosys_json(str(path))
+    netlist = parse_yosys_json(path)
     t_parse = time.perf_counter() - t0
 
     if not netlist.modules:
