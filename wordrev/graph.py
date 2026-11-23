@@ -1,4 +1,3 @@
-# wordrev/graph.py
 """
 Module → NetworkX MultiDiGraph.
 
@@ -23,10 +22,12 @@ Contracts:
     indicates a parser bug and should be treated as such during
     development.
 """
+
 from __future__ import annotations
 
+from collections.abc import Collection, Iterator
 import logging
-from typing import Any, Tuple, List, Dict
+from typing import Any, Literal
 
 import networkx as nx
 
@@ -34,20 +35,26 @@ from .models import BitID, Module, Net
 
 log = logging.getLogger(__name__)
 
-Node = Tuple[str, Any]  # ('net', BitID) | ('gate', str)
+Node = tuple[str, Any]  # ('net', BitID) | ('gate', str)
+EdgeDirection = Literal["net_to_gate", "gate_to_net", "both"]
 
 __all__ = [
     "Node",
     "net_node",
     "gate_node",
+    "is_net",
+    "is_gate",
     "build_graph",
     "edge_data",
+    "in_edges",
+    "node_label",
 ]
 
 
 # -----------------------------------------------------------------------------
-# Node key constructors
+# Node key constructors & predicates
 # -----------------------------------------------------------------------------
+
 
 def net_node(bit_id: BitID) -> Node:
     """Canonical node key for a net. Use this instead of inline tuples."""
@@ -59,9 +66,20 @@ def gate_node(name: str) -> Node:
     return ("gate", name)
 
 
+def is_net(node: Node) -> bool:
+    """True if `node` is a net node key."""
+    return node[0] == "net"
+
+
+def is_gate(node: Node) -> bool:
+    """True if `node` is a gate node key."""
+    return node[0] == "gate"
+
+
 # -----------------------------------------------------------------------------
 # Graph builder
 # -----------------------------------------------------------------------------
+
 
 def build_graph(module: Module) -> nx.MultiDiGraph:
     """Build the bipartite netlist graph for a module.
@@ -109,56 +127,40 @@ def build_graph(module: Module) -> nx.MultiDiGraph:
     # 2. Gates and their edges. Missing nets encountered here are
     #    synthesized via _ensure_net_node without touching the model.
     for gate_name, gate in module.gates.items():
+        g_node = gate_node(gate_name)
         G.add_node(
-            gate_node(gate_name),
+            g_node,
             kind="gate",
             cell_type=gate.cell_type,
             attributes=gate.attributes,
             parameters=gate.parameters,
         )
 
-        for pin, bits in gate.inputs.items():
-            for bit_id in bits:
-                _ensure_net_node(bit_id)
-                G.add_edge(
-                    net_node(bit_id),
-                    gate_node(gate_name),
-                    pin=pin,
-                    role="input",
-                )
+        def _connect(
+            pin_map: dict[str, list[BitID]],
+            role: str,
+            direction: EdgeDirection,
+        ) -> None:
+            for pin, bits in pin_map.items():
+                for bit_id in bits:
+                    _ensure_net_node(bit_id)
+                    n_node = net_node(bit_id)
+                    if direction in ("net_to_gate", "both"):
+                        G.add_edge(n_node, g_node, pin=pin, role=role)
+                    if direction in ("gate_to_net", "both"):
+                        G.add_edge(g_node, n_node, pin=pin, role=role)
 
-        for pin, bits in gate.outputs.items():
-            for bit_id in bits:
-                _ensure_net_node(bit_id)
-                G.add_edge(
-                    gate_node(gate_name),
-                    net_node(bit_id),
-                    pin=pin,
-                    role="output",
-                )
-
-        for pin, bits in gate.inouts.items():
-            for bit_id in bits:
-                _ensure_net_node(bit_id)
-                G.add_edge(
-                    net_node(bit_id),
-                    gate_node(gate_name),
-                    pin=pin,
-                    role="inout",
-                )
-                G.add_edge(
-                    gate_node(gate_name),
-                    net_node(bit_id),
-                    pin=pin,
-                    role="inout",
-                )
+        _connect(gate.inputs, "input", "net_to_gate")
+        _connect(gate.outputs, "output", "gate_to_net")
+        _connect(gate.inouts, "inout", "both")
 
     return G
 
 
 # -----------------------------------------------------------------------------
-# Edge helpers
+# Edge & label helpers
 # -----------------------------------------------------------------------------
+
 
 def edge_data(
     G: nx.MultiDiGraph,
@@ -166,7 +168,7 @@ def edge_data(
     v: Node,
     *,
     required: bool = False,
-) -> List[Dict[str, Any]]:
+) -> list[dict[str, Any]]:
     """All edge attribute dicts between u and v.
 
     MultiDiGraph returns G[u][v] as {key: attrs}, not attrs. This helper
@@ -177,6 +179,19 @@ def edge_data(
             raise KeyError(f"no edge {u} → {v}")
         return []
     return list(G[u][v].values())
+
+
+def in_edges(
+    G: nx.MultiDiGraph,
+    node: Node,
+    roles: Collection[str] | None = None,
+) -> Iterator[tuple[Node, dict[str, Any]]]:
+    """Yield (predecessor, edge_attrs) for incoming edges matching `roles`."""
+    for pred in G.predecessors(node):
+        for attrs in G[pred][node].values():
+            if roles is None or attrs.get("role") in roles:
+                yield pred, attrs
+
 
 def node_label(G: nx.MultiDiGraph, node: Node) -> str:
     """Human-readable label for a net or gate node.
@@ -200,6 +215,6 @@ def node_label(G: nx.MultiDiGraph, node: Node) -> str:
         return f"{base}[{idx}]"
     if data.get("name"):
         return str(data["name"])
-    if node[0] == "gate":
+    if is_gate(node):
         return str(node[1])
     return f"n{node[1]}"
