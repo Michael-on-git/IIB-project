@@ -37,6 +37,9 @@ from typing import Any
 import networkx as nx
 
 from .graph import Node
+from .library import Component
+
+from dataclasses import dataclass
 
 
 # -----------------------------------------------------------------------------
@@ -84,6 +87,89 @@ def _apply_cell(cell_type: str, inputs: dict[str, int]) -> int:
         raise ValueError(f"unsupported cell type: {cell_type}")
     return fn(inputs)
 
+# -----------------------------------------------------------------------------
+# Slice
+# -----------------------------------------------------------------------------
+
+@dataclass
+class Slice:
+    """One (net, cut) slice with its ordered inputs, raw truth table, and
+    canonical signature.
+
+    `ordered_inputs` and `truth_table` together are the *raw* interface:
+    bit `i` of the assignment index `a` selects `ordered_inputs[i]`, and
+    `(truth_table >> a) & 1` is the output for that assignment. This is
+    exactly what `simulate_slice` returns; nothing is permuted.
+
+    `signature` is `(n, canonical_truth_table(truth_table, n))` — the
+    permutation-invariant class key used by aggregation (WordRev §V.2)
+    and by the existing shape-clustering path.
+
+    `aligned_to` and `alignment` are populated by `identify.match_slice_to_library`
+    at aggregation time. Until matched they are None. Treat the pair as an
+    optional side-channel attached to an otherwise pure value object;
+    nothing in Stage B/C/D should depend on their presence except the
+    common-select detector, which gates on `aligned_to.select_ports`.
+
+    Not frozen: the two match fields are set in place by the matching stage.
+    Slice identity is `(output_net, cut)` — do not compare Slices by equality
+    expecting that to identify them; the mutable fields will differ across
+    otherwise-identical slices.
+    """
+    output_net: Node
+    cut: frozenset[Node]
+    ordered_inputs: tuple[Node, ...]
+    truth_table: int
+    signature: tuple[int, int]
+    aligned_to: Component | None = None
+    alignment: dict[str, tuple[Node, ...]] | None = None
+
+
+def enumerate_slices(
+    G: nx.MultiDiGraph,
+    *,
+    max_cut_size: int = 6,
+    max_cut_depth: int = 4,
+    max_canonical_n: int = 5,
+) -> dict[Node, list[Slice]]:
+    """Enumerate every (net, cut) slice produced by `enumerate_cuts`.
+
+    Returns a dict keyed by output net; each value is the list of slices
+    for that net, in cut-enumeration order (trivial cut first). Primary
+    inputs and undriven nets get an empty list.
+
+    Same simulation cost as `compute_functional_signatures` — the only
+    difference is that `variables` and the raw truth table survive
+    instead of being collapsed to `(n, canonical_tt)`. Callers that only
+    need signatures should still use `compute_functional_signatures`;
+    callers that need ordered inputs (aggregation, per-slice matching)
+    use this.
+    """
+    result: dict[Node, list[Slice]] = {}
+    for node in G.nodes:
+        if node[0] != "net":
+            continue
+        slices: list[Slice] = []
+        for cut in enumerate_cuts(
+            G, node, max_size=max_cut_size, max_depth=max_cut_depth
+        ):
+            try:
+                tt, variables = simulate_slice(G, node, cut)
+            except ValueError:
+                # Unsupported cell or combinational cycle — same policy
+                # as compute_functional_signatures.
+                continue
+            n = len(variables)
+            canon_tt = canonical_truth_table(tt, n, max_n=max_canonical_n)
+            slices.append(Slice(
+                output_net=node,
+                cut=cut,
+                ordered_inputs=tuple(variables),
+                truth_table=tt,
+                signature=(n, canon_tt),
+            ))
+        result[node] = slices
+    return result
 
 # -----------------------------------------------------------------------------
 # Graph helpers (netlist-level)

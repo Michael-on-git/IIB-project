@@ -42,6 +42,7 @@ class Component:
     input_ports: tuple[tuple[str, int], ...]
     compute: Callable[[dict[str, int]], int]
     commutative_groups: tuple[frozenset[str], ...] = ()
+    select_ports: frozenset[str] = frozenset()
 
     def __post_init__(self):
         widths = dict(self.input_ports)
@@ -133,6 +134,7 @@ def make_mux(width: int) -> Component:
         output_width=width,
         input_ports=(("a", width), ("b", width), ("sel", 1)),
         compute=lambda i: i["b"] if i["sel"] else i["a"],
+        select_ports=frozenset({"sel"}),
     )
 
 

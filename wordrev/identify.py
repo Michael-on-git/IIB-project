@@ -42,14 +42,14 @@ from __future__ import annotations
 import logging
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import Iterable
+from typing import Iterable, Callable
 
 import networkx as nx
 
 from .aggregate import Word, _bit_sort_key
 from .graph import Node
 from .library import Component, candidates_for_width
-from .slice import _driver_gate, _evaluate_net
+from .slice import _driver_gate, _evaluate_net, Slice
 
 log = logging.getLogger(__name__)
 
@@ -294,6 +294,73 @@ def _canonical_alignment_key(
 
     return (component.name, tuple(parts))
 
+# -----------------------------------------------------------------------------
+# Per-slice matching (WordRev §V.2)
+# -----------------------------------------------------------------------------
+
+def _default_slice_priority(component: Component) -> tuple:
+    """Default candidate ordering for slice matching.
+
+    The 1-bit conflict is `adder(1)` vs `bitwise_xor(1)` — same function,
+    different names. Prefer bitwise components; among same-tier, sort by
+    name for determinism. Callers with different library naming pass their
+    own `priority`.
+    """
+    return (0 if component.name.lower().startswith("bitwise") else 1,
+            component.name)
+
+
+def match_slice_to_library(
+    G: nx.MultiDiGraph,
+    slice: Slice,
+    *,
+    priority: Callable[[Component], tuple] | None = None,
+) -> tuple[Component, dict[str, tuple[Node, ...]]] | None:
+    """Match one 1-bit slice against the component library.
+
+    Returns (component, alignment) with `alignment` keyed by library port
+    name and valued by ordered boundary nets, or None if nothing verifies.
+
+    On success, also sets `slice.aligned_to` and `slice.alignment` in
+    place so downstream aggregation can read them without threading a
+    side table. On failure, leaves the fields untouched.
+
+    Faithful-first assumption: the slice is 1-bit. `output_width` is
+    hard-coded to 1 below; multi-bit slices are an out-of-scope extension.
+    """
+    if slice.aligned_to is not None:
+        # Already matched — idempotent.
+        return slice.aligned_to, slice.alignment or {}
+
+    free_vars = list(slice.ordered_inputs)
+    k = len(free_vars)
+    output_width = 1
+
+    groups = _group_free_vars(G, free_vars)
+
+    # Raw (un-permuted) truth table in `ordered_inputs` order — the
+    # contract `_verify_alignment` expects. `slice.truth_table` is exactly
+    # this; `slice.signature[1]` is not (it is permutation-canonicalized).
+    recovered_tt: dict[int, int] = {
+        a: (slice.truth_table >> a) & 1 for a in range(1 << k)
+    }
+
+    candidates = [
+        c for c in candidates_for_width(output_width)
+        if c.total_input_bits == k
+    ]
+    if not candidates:
+        return None
+    candidates.sort(key=priority or _default_slice_priority)
+
+    for component in candidates:
+        for alignment in _alignments(component, groups, free_vars):
+            if _verify_alignment(component, alignment, free_vars, recovered_tt):
+                aligned = {p: tuple(nets) for p, nets in alignment.items()}
+                slice.aligned_to = component
+                slice.alignment = aligned
+                return component, aligned
+    return None
 
 # -----------------------------------------------------------------------------
 # Public API

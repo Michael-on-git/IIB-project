@@ -20,6 +20,7 @@ Not covered:
   - Real Yosys netlists (integration test territory)
   - Timing or memory characteristics
 """
+import networkx as nx
 
 from collections import defaultdict
 from wordrev.aggregate import Word
@@ -34,6 +35,7 @@ from wordrev.identify import (
     _verify_alignment,
     identify_word,
     identify_words,
+    match_slice_to_library,
 )
 from wordrev.library import (
     candidates_for_width,
@@ -47,7 +49,7 @@ from wordrev.library import (
     make_subtractor,
 )
 from wordrev.models import Gate, Module
-
+from wordrev.slice import enumerate_slices
 
 # -----------------------------------------------------------------------------
 # Helpers
@@ -639,3 +641,51 @@ def test_1bit_subtractor_declares_commutativity():
 def test_2bit_subtractor_is_not_commutative():
     from wordrev.library import make_subtractor
     assert make_subtractor(2).commutative_groups == ()
+
+# -----------------------------------------------------------------------------
+# Slice enumerate change
+# -----------------------------------------------------------------------------
+
+def _build_mux1_netlist():
+    G = nx.MultiDiGraph()
+    a, b, sel, y = ("net", 2), ("net", 3), ("net", 4), ("net", 5)
+    g = ("gate", 0)
+    G.add_node(a, is_constant=False, base_name="a", vector_index=0)
+    G.add_node(b, is_constant=False, base_name="b", vector_index=0)
+    G.add_node(sel, is_constant=False, base_name="sel", vector_index=0)
+    G.add_node(y, is_constant=False, base_name="y", vector_index=0)
+    G.add_node(g, cell_type="$_MUX_")
+    G.add_edge(a, g, pin="A", role="input")
+    G.add_edge(b, g, pin="B", role="input")
+    G.add_edge(sel, g, pin="S", role="input")
+    G.add_edge(g, y, pin="Y", role="output")
+    return G, a, b, sel, y
+
+
+def test_match_slice_to_library_mux():
+    G, a, b, sel, y = _build_mux1_netlist()
+    slices = enumerate_slices(G)
+    assert slices[y]
+
+    sl = slices[y][0]
+    result = match_slice_to_library(G, sl)
+    assert result is not None
+
+    component, alignment = result
+    assert component.output_width == 1
+    assert "sel" in component.select_ports
+    # Mux is not commutative across a/b, so exactly one alignment verifies.
+    assert alignment["a"] == (a,)
+    assert alignment["b"] == (b,)
+    assert alignment["sel"] == (sel,)
+    # Fields populated in place.
+    assert sl.aligned_to is component
+    assert sl.alignment == alignment
+
+
+def test_match_slice_to_library_idempotent():
+    G, *_ = _build_mux1_netlist()
+    sl = enumerate_slices(G)[("net", 5)][0]
+    first = match_slice_to_library(G, sl)
+    second = match_slice_to_library(G, sl)
+    assert first == second  # same component + alignment

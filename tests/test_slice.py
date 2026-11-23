@@ -28,6 +28,7 @@ from wordrev.slice import (
     enumerate_cuts,
     simulate_slice,
     slice_signature,
+    enumerate_slices,
 )
 
 
@@ -516,3 +517,44 @@ def test_primary_input_gets_empty_signature():
     G = build_graph(m)
     sigs = compute_functional_signatures(G)
     assert sigs[net_node(2)] == frozenset()
+
+# -----------------------------------------------------------------------------
+# Enumerate
+# -----------------------------------------------------------------------------
+
+def _build_and2_netlist():
+    G = nx.MultiDiGraph()
+    a, b, y = ("net", 2), ("net", 3), ("net", 4)
+    g = ("gate", 0)
+    G.add_node(a, is_constant=False, base_name="a", vector_index=0)
+    G.add_node(b, is_constant=False, base_name="b", vector_index=0)
+    G.add_node(y, is_constant=False, base_name="y", vector_index=0)
+    G.add_node(g, cell_type="$_AND_")
+    G.add_edge(a, g, pin="A", role="input")
+    G.add_edge(b, g, pin="B", role="input")
+    G.add_edge(g, y, pin="Y", role="output")
+    return G, a, b, y
+
+
+def test_enumerate_slices_returns_ordered_inputs():
+    G, a, b, y = _build_and2_netlist()
+    result = enumerate_slices(G)
+
+    # Output net has at least the trivial cut.
+    assert y in result and result[y]
+
+    sl = result[y][0]
+    assert sl.output_net == y
+    # Ordered by _net_sort_key: bit 2 before bit 3.
+    assert sl.ordered_inputs == (a, b)
+    # AND(0,0)=0, AND(0,1)=0, AND(1,0)=0, AND(1,1)=1 → 0b1000 = 8.
+    assert sl.truth_table == 8
+    assert sl.signature == (2, 8)
+    # Match fields are None until match_slice_to_library runs.
+    assert sl.aligned_to is None and sl.alignment is None
+
+
+def test_enumerate_slices_primary_input_is_empty():
+    G, a, _, _ = _build_and2_netlist()
+    result = enumerate_slices(G)
+    assert result[a] == []
